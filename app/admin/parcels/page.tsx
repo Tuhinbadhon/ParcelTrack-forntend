@@ -27,16 +27,22 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Search, Eye, UserPlus } from "lucide-react";
-import { format } from "date-fns";
+import { Search, UserPlus } from "lucide-react";
 import toast from "react-hot-toast";
 import { parcelApi } from "@/lib/api/parcels";
 import { userApi } from "@/lib/api/users";
 import { Parcel } from "@/lib/store/slices/parcelSlice";
 
+interface Agent {
+  _id: string;
+  name: string;
+  email?: string;
+  isActive: boolean;
+}
+
 export default function AdminParcelsPage() {
   const [parcels, setParcels] = useState<Parcel[]>([]);
-  const [agents, setAgents] = useState<any[]>([]);
+  const [agents, setAgents] = useState<Agent[]>([]);
   const [selectedParcel, setSelectedParcel] = useState<Parcel | null>(null);
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState("");
@@ -73,26 +79,11 @@ export default function AdminParcelsPage() {
       toast.success("Agent assigned successfully");
       setAssignDialogOpen(false);
       setSelectedAgent("");
-      loadData(); // Reload data
+      loadData();
     } catch (error) {
+      console.error("Failed to assign agent:", error);
       toast.error("Failed to assign agent");
     }
-  };
-
-  const getStatusBadge = (status: string) => {
-    const variants: Record<string, "default" | "secondary" | "destructive"> = {
-      pending: "secondary",
-      picked_up: "default",
-      in_transit: "default",
-      delivered: "default",
-      failed: "destructive",
-    };
-
-    return (
-      <Badge variant={variants[status] || "default"} className="capitalize">
-        {status.replace("_", " ")}
-      </Badge>
-    );
   };
 
   const filteredParcels = parcels.filter((p) => {
@@ -112,17 +103,33 @@ export default function AdminParcelsPage() {
       </div>
     );
   }
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "delivered":
+        return "bg-green-500 text-white";
+      case "failed":
+        return "bg-red-500 text-white";
+      case "in_transit":
+        return "bg-blue-500 text-white";
+      case "picked_up":
+        return "bg-yellow-500 text-white";
+      default:
+        return "bg-gray-500 text-white";
+    }
+  };
+
+  const filteredAgents = agents.filter((a) => a.isActive === true);
 
   return (
     <div className="space-y-6">
-      <div>
+      <div className="flex flex-col items-center md:items-start gap-2">
         <h1 className="text-3xl font-bold">Parcel Management</h1>
         <p className="text-muted-foreground">View and manage all parcels</p>
       </div>
 
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col md:flex-row items-center md:justify-between gap-5">
             <CardTitle>All Parcels ({filteredParcels.length})</CardTitle>
             <div className="relative">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -179,7 +186,15 @@ export default function AdminParcelsPage() {
                       <TableCell className="max-w-50 truncate">
                         {parcel.recipientAddress}
                       </TableCell>
-                      <TableCell>{getStatusBadge(parcel.status)}</TableCell>
+                      <TableCell>
+                        <Badge
+                          className={`capitalize ${getStatusColor(
+                            parcel.status
+                          )}`}
+                        >
+                          {parcel?.status}
+                        </Badge>
+                      </TableCell>
                       <TableCell>৳{parcel.cost}</TableCell>
                       <TableCell>{parcel.weight} kg</TableCell>
                       <TableCell className="text-right">
@@ -195,7 +210,6 @@ export default function AdminParcelsPage() {
                           >
                             <UserPlus className="h-4 w-4" />
                           </Button>
-                          
                         </div>
                       </TableCell>
                     </TableRow>
@@ -227,7 +241,7 @@ export default function AdminParcelsPage() {
                     <SelectValue placeholder="Choose an agent" />
                   </SelectTrigger>
                   <SelectContent>
-                    {agents.map((agent) => (
+                    {filteredAgents.map((agent) => (
                       <SelectItem key={agent._id} value={agent._id}>
                         {agent.name} ({agent.email})
                       </SelectItem>

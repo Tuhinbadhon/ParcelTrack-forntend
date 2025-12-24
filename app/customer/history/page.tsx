@@ -54,8 +54,6 @@ export default function BookingHistoryPage() {
     }
   };
 
-  
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-100">
@@ -66,15 +64,15 @@ export default function BookingHistoryPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "delivered":
-        return "bg-green-500";
+        return "bg-green-500 text-white";
       case "failed":
-        return "bg-red-500";
+        return "bg-red-500 text-white";
       case "in_transit":
-        return "bg-blue-500";
+        return "bg-blue-500 text-white";
       case "picked_up":
-        return "bg-yellow-500";
+        return "bg-yellow-500 text-white";
       default:
-        return "bg-gray-500";
+        return "bg-gray-500 text-white";
     }
   };
   return (
@@ -147,7 +145,11 @@ export default function BookingHistoryPage() {
                         <Link
                           href={`/customer/track?id=${parcel.trackingNumber}`}
                         >
-                          <Button variant="outline" className="cursor-pointer" size="sm">
+                          <Button
+                            variant="outline"
+                            className="cursor-pointer"
+                            size="sm"
+                          >
                             <Eye className="h-4 w-4 mr-1" />
                             View
                           </Button>

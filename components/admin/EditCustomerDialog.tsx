@@ -17,7 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "react-hot-toast";
 import { userApi } from "@/lib/api/users";
 
-interface Agent {
+interface Customer {
   _id: string;
   name: string;
   email: string;
@@ -27,19 +27,19 @@ interface Agent {
   createdAt: string;
 }
 
-interface EditAgentDialogProps {
+interface EditCustomerDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  agent: Agent | null;
+  customer: Customer | null;
   onSuccess: () => void;
 }
 
-export default function EditAgentDialog({
+export default function EditCustomerDialog({
   open,
   onOpenChange,
-  agent,
+  customer,
   onSuccess,
-}: EditAgentDialogProps) {
+}: EditCustomerDialogProps) {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -49,32 +49,32 @@ export default function EditAgentDialog({
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (agent) {
+    if (customer) {
       setFormData({
-        name: agent.name,
-        email: agent.email,
-        phone: agent.phone || "",
-        address: (agent as any).address || "",
+        name: customer.name,
+        email: customer.email,
+        phone: customer.phone || "",
+        address: (customer as any).address || "",
       });
     }
-  }, [agent]);
+  }, [customer]);
 
   const handleSubmit = async () => {
-    if (!agent) return;
+    if (!customer) return;
 
     setSubmitting(true);
     try {
-      await userApi.updateUser(agent._id, {
+      await userApi.updateUser(customer._id, {
         name: formData.name,
         email: formData.email,
         phone: formData.phone,
         address: formData.address,
       });
-      toast.success("Agent updated successfully");
+      toast.success("customer updated successfully");
       onOpenChange(false);
       onSuccess();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to update agent");
+      toast.error(error.response?.data?.message || "Failed to update customer");
     } finally {
       setSubmitting(false);
     }
@@ -94,15 +94,15 @@ export default function EditAgentDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Edit Agent</DialogTitle>
-          <DialogDescription>Update agent information</DialogDescription>
+          <DialogTitle>Edit customer</DialogTitle>
+          <DialogDescription>Update customer information</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="edit-name">Name</Label>
             <Input
               id="edit-name"
-              placeholder="Enter agent name"
+              placeholder="Enter customer name"
               value={formData.name}
               onChange={(e) =>
                 setFormData({ ...formData, name: e.target.value })
@@ -149,7 +149,7 @@ export default function EditAgentDialog({
             Cancel
           </Button>
           <Button onClick={handleSubmit} disabled={submitting}>
-            {submitting ? "Updating..." : "Update Agent"}
+            {submitting ? "Updating..." : "Update customer"}
           </Button>
         </DialogFooter>
       </DialogContent>

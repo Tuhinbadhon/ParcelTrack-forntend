@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -46,15 +47,15 @@ export default function AgentDashboard() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "delivered":
-        return "bg-green-500";
+        return "bg-green-500 text-white";
       case "failed":
-        return "bg-red-500";
+        return "bg-red-500 text-white";
       case "in_transit":
-        return "bg-blue-500";
+        return "bg-blue-500 text-white";
       case "picked_up":
-        return "bg-yellow-500";
+        return "bg-yellow-500 text-white";
       default:
-        return "bg-gray-500";
+        return "bg-gray-500 text-white";
     }
   };
 
@@ -66,6 +67,33 @@ export default function AgentDashboard() {
     );
   }
 
+  const metricCards = [
+    {
+      id: "total",
+      title: "Total Assigned",
+      value: stats.total,
+      icon: Package,
+    },
+    {
+      id: "pending",
+      title: "Pending Pickup",
+      value: stats.pending,
+      icon: Clock,
+    },
+    {
+      id: "inTransit",
+      title: "In Transit",
+      value: stats.inTransit,
+      icon: TrendingUp,
+    },
+    {
+      id: "delivered",
+      title: "Delivered Today",
+      value: stats.delivered,
+      icon: CheckCircle,
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <div>
@@ -75,52 +103,23 @@ export default function AgentDashboard() {
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Assigned
-            </CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.total}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Pending Pickup
-            </CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.pending}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">In Transit</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.inTransit}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Delivered Today
-            </CardTitle>
-            <CheckCircle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.delivered}</div>
-          </CardContent>
-        </Card>
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+        {metricCards.map((card) => {
+          const Icon = card.icon as any;
+          return (
+            <Card className="py-3 gap-1" key={card.id}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  {card.title}
+                </CardTitle>
+                <Icon className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{card.value}</div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       <Card>
@@ -145,23 +144,30 @@ export default function AgentDashboard() {
               {todayParcels.map((parcel) => (
                 <div
                   key={parcel._id}
-                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                  className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                 >
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
                     <div
                       className={`w-2 h-2 rounded-full ${getStatusColor(
                         parcel.status
                       )}`}
                     />
                     <div>
-                      <p className="font-medium">{parcel.trackingNumber}</p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="font-medium text-sm">
+                        {parcel.trackingNumber}
+                      </p>
+                      <p className="text-xs md:text-sm text-muted-foreground">
                         {parcel.recipientAddress}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
-                    <Badge variant="secondary" className={`capitalize ${getStatusColor(parcel.status)}`}>
+                    <Badge
+                      variant="secondary"
+                      className={`capitalize text-white ${getStatusColor(
+                        parcel.status
+                      )}`}
+                    >
                       {parcel.status.replace("_", " ")}
                     </Badge>
                     {parcel.status !== "delivered" &&

@@ -1,18 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  CheckCircle,
-  Package,
-  Calendar,
-  MapPin,
-  User,
-  Phone,
-  Clock,
-} from "lucide-react";
+import { CheckCircle, Package, MapPin, Clock } from "lucide-react";
 import { parcelApi } from "@/lib/api/parcels";
 import { Parcel } from "@/lib/store/slices/parcelSlice";
 import {
@@ -63,7 +55,7 @@ export default function AgentCompletedPage() {
   const getStatusBadge = (status: string) => {
     if (status === "delivered") {
       return (
-        <Badge className="bg-green-500 hover:bg-green-600">
+        <Badge className="bg-green-500 text-white hover:bg-green-600">
           <CheckCircle className="mr-1 h-3 w-3" />
           Delivered
         </Badge>
@@ -90,6 +82,29 @@ export default function AgentCompletedPage() {
     );
   }
 
+  const statCards = [
+    {
+      id: "total",
+      title: "Total Completed",
+      value: stats.total,
+      icon: Package,
+    },
+    {
+      id: "delivered",
+      title: "Successfully Delivered",
+      value: stats.delivered,
+      valueClass: "text-2xl font-bold text-green-600",
+      icon: CheckCircle,
+    },
+    {
+      id: "failed",
+      title: "Failed",
+      value: stats.failed,
+      valueClass: "text-2xl font-bold text-red-600",
+      icon: Package,
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <div>
@@ -100,44 +115,25 @@ export default function AgentCompletedPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Completed
-            </CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.total}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Successfully Delivered
-            </CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {stats.delivered}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Failed</CardTitle>
-            <Package className="h-4 w-4 text-red-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">
-              {stats.failed}
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-3">
+        {statCards.map((card) => {
+          const Icon = (card.icon as any) || Package;
+          return (
+            <Card className="py-3 gap-1" key={card.id}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  {card.title}
+                </CardTitle>
+                <Icon className={`h-4 w-4 ${"text-muted-foreground"}`} />
+              </CardHeader>
+              <CardContent>
+                <div className={card.valueClass ?? "text-2xl font-bold"}>
+                  {card.value}
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       {/* Completed Parcels Table */}

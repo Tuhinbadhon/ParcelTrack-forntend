@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -46,15 +47,15 @@ export default function CustomerDashboard() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "delivered":
-        return "bg-green-500";
+        return "bg-green-500 text-white";
       case "failed":
-        return "bg-red-500";
+        return "bg-red-500 text-white";
       case "in_transit":
-        return "bg-blue-500";
+        return "bg-blue-500 text-white";
       case "picked_up":
-        return "bg-yellow-500";
+        return "bg-yellow-500 text-white";
       default:
-        return "bg-gray-500";
+        return "bg-gray-500 text-white";
     }
   };
   if (loading) {
@@ -64,6 +65,33 @@ export default function CustomerDashboard() {
       </div>
     );
   }
+
+  const metricCards = [
+    {
+      id: "total",
+      title: "Total Parcels",
+      value: stats.total,
+      icon: Package,
+    },
+    {
+      id: "pending",
+      title: "In Pending",
+      value: stats.pending,
+      icon: Clock,
+    },
+    {
+      id: "delivered",
+      title: "Delivered",
+      value: stats.delivered,
+      icon: CheckCircle,
+    },
+    {
+      id: "failed",
+      title: "Failed",
+      value: stats.failed,
+      icon: XCircle,
+    },
+  ];
 
   return (
     <div className="space-y-6">
@@ -75,45 +103,22 @@ export default function CustomerDashboard() {
       </div>
 
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-        <Card className="gap-1 py-4 lg:gap-6 lg:py-4">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Parcels</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.total}</div>
-          </CardContent>
-        </Card>
-
-            <Card className="gap-1 py-4 lg:gap-6 lg:py-4">
+        {metricCards.map((card) => {
+          const Icon = card.icon as any;
+          return (
+            <Card className="py-3 gap-1" key={card.id}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">In Transit</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.pending}</div>
-          </CardContent>
-        </Card>
-
-        <Card className="gap-1 py-4 lg:gap-6 lg:py-4">   
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Delivered</CardTitle>
-            <CheckCircle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.delivered}</div>
-          </CardContent>
-        </Card>
-
-        <Card className="gap-1 py-4 lg:gap-6 lg:py-4">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Failed</CardTitle>
-            <XCircle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.failed}</div>
-          </CardContent>
-        </Card>
+                <CardTitle className="text-sm font-medium">
+                  {card.title}
+                </CardTitle>
+                <Icon className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{card.value}</div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       <Card>
@@ -143,7 +148,7 @@ export default function CustomerDashboard() {
               {recentParcels.map((parcel) => (
                 <div
                   key={parcel._id}
-                  className="flex items-center justify-between p-4 border rounded-lg"
+                  className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                 >
                   <div className="flex items-center gap-4">
                     <div
@@ -159,7 +164,12 @@ export default function CustomerDashboard() {
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
-                    <Badge variant="secondary" className={`capitalize ${getStatusColor(parcel.status)}`}>
+                    <Badge
+                      variant="secondary"
+                      className={`capitalize text-white ${getStatusColor(
+                        parcel.status
+                      )}`}
+                    >
                       {parcel.status.replace("_", " ")}
                     </Badge>
                     <Link href={`/customer/track?id=${parcel.trackingNumber}`}>

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -17,64 +17,47 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "react-hot-toast";
 import { userApi } from "@/lib/api/users";
 
-interface Agent {
-  _id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  address?: string;
-  isActive: boolean;
-  createdAt: string;
-}
-
-interface EditAgentDialogProps {
+interface AddCustomerDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  agent: Agent | null;
   onSuccess: () => void;
 }
 
-export default function EditAgentDialog({
+export default function AddCustomerDialog({
   open,
   onOpenChange,
-  agent,
   onSuccess,
-}: EditAgentDialogProps) {
+}: AddCustomerDialogProps) {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     phone: "",
     address: "",
+    password: "",
   });
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    if (agent) {
-      setFormData({
-        name: agent.name,
-        email: agent.email,
-        phone: agent.phone || "",
-        address: (agent as any).address || "",
-      });
-    }
-  }, [agent]);
-
   const handleSubmit = async () => {
-    if (!agent) return;
+    if (!formData.name || !formData.email || !formData.password) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
 
     setSubmitting(true);
     try {
-      await userApi.updateUser(agent._id, {
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        address: formData.address,
-      });
-      toast.success("Agent updated successfully");
+      await userApi.addCustomer(formData);
+      toast.success("Customer account created successfully");
       onOpenChange(false);
+      setFormData({
+        name: "",
+        email: "",
+        phone: "",
+        address: "",
+        password: "",
+      });
       onSuccess();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to update agent");
+      toast.error(error.response?.data?.message || "Failed to add Customer");
     } finally {
       setSubmitting(false);
     }
@@ -87,6 +70,7 @@ export default function EditAgentDialog({
       email: "",
       phone: "",
       address: "",
+      password: "",
     });
   };
 
@@ -94,15 +78,15 @@ export default function EditAgentDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Edit Agent</DialogTitle>
-          <DialogDescription>Update agent information</DialogDescription>
+          <DialogTitle>Add New Customer</DialogTitle>
+          <DialogDescription>Create a new customer account</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="edit-name">Name</Label>
+            <Label htmlFor="name">Name *</Label>
             <Input
-              id="edit-name"
-              placeholder="Enter agent name"
+              id="name"
+              placeholder="Enter customer name"
               value={formData.name}
               onChange={(e) =>
                 setFormData({ ...formData, name: e.target.value })
@@ -110,9 +94,9 @@ export default function EditAgentDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="edit-email">Email</Label>
+            <Label htmlFor="email">Email *</Label>
             <Input
-              id="edit-email"
+              id="email"
               type="email"
               placeholder="Enter email address"
               value={formData.email}
@@ -122,9 +106,9 @@ export default function EditAgentDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="edit-phone">Phone</Label>
+            <Label htmlFor="phone">Phone</Label>
             <Input
-              id="edit-phone"
+              id="phone"
               placeholder="Enter phone number"
               value={formData.phone}
               onChange={(e) =>
@@ -133,13 +117,25 @@ export default function EditAgentDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="edit-address">Address</Label>
+            <Label htmlFor="address">Address</Label>
             <Textarea
-              id="edit-address"
+              id="address"
               placeholder="Enter address"
               value={formData.address}
               onChange={(e) =>
                 setFormData({ ...formData, address: e.target.value })
+              }
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="password">Password *</Label>
+            <Input
+              id="password"
+              type="password"
+              placeholder="Enter password"
+              value={formData.password}
+              onChange={(e) =>
+                setFormData({ ...formData, password: e.target.value })
               }
             />
           </div>
@@ -149,7 +145,7 @@ export default function EditAgentDialog({
             Cancel
           </Button>
           <Button onClick={handleSubmit} disabled={submitting}>
-            {submitting ? "Updating..." : "Update Agent"}
+            {submitting ? "Creating..." : "Create Customer"}
           </Button>
         </DialogFooter>
       </DialogContent>

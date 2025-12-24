@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import toast from "react-hot-toast";
+import { userApi } from "@/lib/api/users";
+import Swal from "sweetalert2";
+import AddCustomerDialog from "@/components/admin/AddCustomerDialog";
+import EditCustomerDialog from "@/components/admin/EditCustomerDialog";
 
 interface Customer {
   _id: string;
@@ -41,9 +47,16 @@ interface Customer {
 
 export default function AdminCustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [addCustomerOpen, setAddCustomerOpen] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
+    null
+  );
+  const [editOpen, setEditOpen] = useState(false);
+
   const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showAll, setShowAll] = useState(true);
   const [stats, setStats] = useState({
     total: 0,
     active: 0,
@@ -54,65 +67,105 @@ export default function AdminCustomersPage() {
     loadCustomers();
   }, []);
 
-  useEffect(() => {
-    filterCustomers();
-  }, [searchQuery, customers]);
-
   const loadCustomers = async () => {
     try {
-      // TODO: Replace with actual API call
-      // const response = await fetch('/api/users?role=customer');
-      // const data = await response.json();
+      const users = await userApi.getAllUsers();
+      const customerUsers: Customer[] = users
+        .filter((u) => u.role === "customer")
+        .map((u) => ({
+          _id: u._id,
+          name: u.name,
+          email: u.email,
+          phone: u.phone,
+          role: u.role,
+          isActive: u.isActive,
+          createdAt: u.createdAt,
+        }));
 
-      // Mock data for now
-      const mockCustomers: Customer[] = [
-        {
-          _id: "1",
-          name: "John Doe",
-          email: "john@example.com",
-          phone: "+880 1234567890",
-          role: "customer",
-          isActive: true,
-          createdAt: new Date().toISOString(),
-        },
-        {
-          _id: "2",
-          name: "Jane Smith",
-          email: "jane@example.com",
-          phone: "+880 1987654321",
-          role: "customer",
-          isActive: true,
-          createdAt: new Date().toISOString(),
-        },
-      ];
-
-      setCustomers(mockCustomers);
+      setCustomers(customerUsers);
       setStats({
-        total: mockCustomers.length,
-        active: mockCustomers.filter((c) => c.isActive).length,
-        inactive: mockCustomers.filter((c) => !c.isActive).length,
+        total: customerUsers.length,
+        active: customerUsers.filter((c) => c.isActive).length,
+        inactive: customerUsers.filter((c) => !c.isActive).length,
       });
     } catch (error) {
       console.error("Failed to load customers:", error);
+      toast.error("Failed to load customers");
     } finally {
       setLoading(false);
     }
   };
 
-  const filterCustomers = () => {
+  const filterCustomers = useCallback(() => {
+    const base = showAll ? customers : customers.filter((c) => c.isActive);
     if (!searchQuery.trim()) {
-      setFilteredCustomers(customers);
+      setFilteredCustomers(base);
       return;
     }
 
     const query = searchQuery.toLowerCase();
-    const filtered = customers.filter(
+    const filtered = base.filter(
       (customer) =>
         customer.name.toLowerCase().includes(query) ||
         customer.email.toLowerCase().includes(query) ||
         customer.phone?.toLowerCase().includes(query)
     );
     setFilteredCustomers(filtered);
+  }, [searchQuery, customers, showAll]);
+
+  useEffect(() => {
+    filterCustomers();
+  }, [filterCustomers]);
+
+  const handleToggleActive = async (customer: Customer) => {
+    try {
+      await userApi.updateUser(customer._id, {
+        isActive: !customer.isActive,
+      } as any);
+      toast.success(
+        `Customer ${!customer.isActive ? "activated" : "deactivated"}`
+      );
+      loadCustomers();
+    } catch (error) {
+      console.error("Failed to update customer:", error);
+      toast.error("Failed to update customer");
+    }
+  };
+
+  const handleDelete = async (customer: Customer) => {
+    try {
+      Swal.fire({
+        title: "Delete Customer",
+        text: `Are you sure you want to delete ${customer.name}? This action cannot be undone.`,
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#ef4444",
+        cancelButtonColor: "#6b7280",
+        confirmButtonText: "Yes, delete",
+        cancelButtonText: "Cancel",
+        showLoaderOnConfirm: true,
+        allowOutsideClick: () => !Swal.isLoading(),
+        preConfirm: async () => {
+          try {
+            await userApi.deleteUser(customer._id);
+            return true;
+          } catch (error: any) {
+            Swal.showValidationMessage(
+              error.response?.data?.message || "Failed to delete Customer"
+            );
+            return false;
+          }
+        },
+      }).then((result) => {
+        if (result.isConfirmed && result.value) {
+          toast.success("Customer deleted");
+          loadCustomers();
+        }
+      });
+    } catch (error) {
+      console.error("Failed to delete customer:", error);
+      toast.error("Failed to delete customer");
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -130,25 +183,37 @@ export default function AdminCustomersPage() {
       </div>
     );
   }
-
+  const handleEdit = (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setEditOpen(true);
+  };
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex flex-col md:flex-row gap-6 items-center justify-between">
+        <div className="flex flex-col items-center md:items-start gap-2">
           <h1 className="text-3xl font-bold">Customers</h1>
           <p className="text-muted-foreground">
             Manage customer accounts and information
           </p>
         </div>
-        <Button>
-          <UserPlus className="mr-2 h-4 w-4" />
-          Add Customer
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowAll((s) => !s)}
+          >
+            {showAll ? "Showing: All" : "Showing: Active"}
+          </Button>
+          <Button onClick={() => setAddCustomerOpen(true)}>
+            <UserPlus className="mr-2 h-4 w-4" />
+            Add Customer
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-3">
+        <Card className="py-3 gap-2">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Total Customers
@@ -160,7 +225,7 @@ export default function AdminCustomersPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="py-3 gap-2">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active</CardTitle>
             <Users className="h-4 w-4 text-green-600" />
@@ -172,7 +237,7 @@ export default function AdminCustomersPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="py-3 gap-2">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Inactive</CardTitle>
             <Users className="h-4 w-4 text-red-600" />
@@ -206,12 +271,18 @@ export default function AdminCustomersPage() {
             <div className="text-center py-12">
               <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-2">
-                {searchQuery ? "No customers found" : "No customers yet"}
+                {searchQuery
+                  ? "No customers found"
+                  : showAll
+                  ? "No customers yet"
+                  : "No active customers yet"}
               </h3>
               <p className="text-muted-foreground">
                 {searchQuery
                   ? "Try adjusting your search query"
-                  : "Add your first customer to get started"}
+                  : showAll
+                  ? "Add your first customer to get started"
+                  : "Activate or add a customer to get started"}
               </p>
             </div>
           ) : (
@@ -254,7 +325,8 @@ export default function AdminCustomersPage() {
                       </TableCell>
                       <TableCell>
                         <Badge
-                          variant={customer.isActive ? "default" : "secondary"}
+                          className="dark:text-white"
+                          variant={customer.isActive ? "active" : "inactive"}
                         >
                           {customer.isActive ? "Active" : "Inactive"}
                         </Badge>
@@ -267,12 +339,20 @@ export default function AdminCustomersPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem>View Details</DropdownMenuItem>
-                            <DropdownMenuItem>Edit</DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleEdit(customer)}
+                            >
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleToggleActive(customer)}
+                            >
                               {customer.isActive ? "Deactivate" : "Activate"}
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="text-red-600">
+                            <DropdownMenuItem
+                              className="text-red-600"
+                              onClick={() => handleDelete(customer)}
+                            >
                               Delete
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -286,6 +366,19 @@ export default function AdminCustomersPage() {
           )}
         </CardContent>
       </Card>
+      {/* Dialog Components */}
+      <AddCustomerDialog
+        open={addCustomerOpen}
+        onOpenChange={setAddCustomerOpen}
+        onSuccess={loadCustomers}
+      />
+
+      <EditCustomerDialog
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        customer={selectedCustomer}
+        onSuccess={loadCustomers}
+      />
     </div>
   );
 }

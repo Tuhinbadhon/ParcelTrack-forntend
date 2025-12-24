@@ -9,6 +9,7 @@ export interface User {
   address?: string;
   createdAt: string;
   updatedAt: string;
+  isActive: boolean;
 }
 
 export interface UpdateUserData {
@@ -58,6 +59,18 @@ export const userApi = {
     password: string;
   }): Promise<User> => {
     const response = await apiClient.post("/users/agents", data);
+    return response.data;
+  },
+
+  // Add customer (admin only)
+  addCustomer: async (data: {
+    name: string;
+    email: string;
+    phone?: string;
+    address?: string;
+    password: string;
+  }): Promise<User> => {
+    const response = await apiClient.post("/users/customers", data);
     return response.data;
   },
 };

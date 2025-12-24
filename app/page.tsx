@@ -16,10 +16,12 @@ export default function Home() {
           <div className="flex gap-2 items-center">
             <ThemeToggle />
             <Link href="/login">
-              <Button variant="outline">Login</Button>
+              <Button className="cursor-pointer" variant="outline">
+                Login
+              </Button>
             </Link>
             <Link href="/register">
-              <Button>Sign Up</Button>
+              <Button className="cursor-pointer">Sign Up</Button>
             </Link>
           </div>
         </div>

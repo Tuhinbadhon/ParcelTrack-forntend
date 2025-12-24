@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -33,7 +34,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import toast from "react-hot-toast";
-import { Parcel } from "@/lib/store/slices/parcelSlice";
 import AddAgentDialog from "@/components/admin/AddAgentDialog";
 import ViewPerformanceDialog from "@/components/admin/ViewPerformanceDialog";
 import EditAgentDialog from "@/components/admin/EditAgentDialog";
@@ -74,14 +74,25 @@ export default function AdminAgentsPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
-  const [agentParcels, setAgentParcels] = useState<Parcel[]>([]);
 
   useEffect(() => {
     loadAgents();
   }, []);
 
   useEffect(() => {
-    filterAgents();
+    if (!searchQuery.trim()) {
+      setFilteredAgents(agents);
+      return;
+    }
+
+    const query = searchQuery.toLowerCase();
+    const filtered = agents.filter(
+      (agent) =>
+        agent.name.toLowerCase().includes(query) ||
+        agent.email.toLowerCase().includes(query) ||
+        agent.phone?.toLowerCase().includes(query)
+    );
+    setFilteredAgents(filtered);
   }, [searchQuery, agents]);
 
   // Ensure filteredAgents is populated initially
@@ -96,7 +107,7 @@ export default function AdminAgentsPage() {
         parcelApi.getParcels(),
       ]);
 
-      const mappedAgents: Agent[] = agentsData.map((agent) => {
+      const mappedAgents: Agent[] = agentsData.map((agent: Partial<Agent>) => {
         const assigned = parcels.filter((p) => {
           const agentId = typeof p.agent === "object" ? p.agent?._id : p.agent;
           return agentId === agent._id;
@@ -112,7 +123,7 @@ export default function AdminAgentsPage() {
 
         return {
           ...agent,
-          isActive: (agent as any).isActive ?? true,
+          isActive: agent.isActive ?? true,
           assignedParcels: assigned,
           completedParcels: completed,
         } as Agent;
@@ -137,22 +148,6 @@ export default function AdminAgentsPage() {
     }
   };
 
-  const filterAgents = () => {
-    if (!searchQuery.trim()) {
-      setFilteredAgents(agents);
-      return;
-    }
-
-    const query = searchQuery.toLowerCase();
-    const filtered = agents.filter(
-      (agent) =>
-        agent.name.toLowerCase().includes(query) ||
-        agent.email.toLowerCase().includes(query) ||
-        agent.phone?.toLowerCase().includes(query)
-    );
-    setFilteredAgents(filtered);
-  };
-
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       month: "short",
@@ -164,17 +159,6 @@ export default function AdminAgentsPage() {
   const handleViewPerformance = async (agent: Agent) => {
     setSelectedAgent(agent);
     setPerformanceOpen(true);
-
-    try {
-      const parcels = await parcelApi.getParcels();
-      const agentsParcels = parcels.filter((p) => {
-        const agentId = typeof p.agent === "object" ? p.agent?._id : p.agent;
-        return agentId === agent._id;
-      });
-      setAgentParcels(agentsParcels);
-    } catch (error) {
-      console.error("Failed to load agent parcels:", error);
-    }
   };
 
   const handleEdit = (agent: Agent) => {
@@ -185,9 +169,8 @@ export default function AdminAgentsPage() {
   const handleToggleActive = async (agent: Agent) => {
     try {
       await userApi.updateUser(agent._id, {
-        // @ts-ignore
         isActive: !agent.isActive,
-      });
+      } as any);
       toast.success(`Agent ${!agent.isActive ? "activated" : "deactivated"}`);
       loadAgents();
     } catch (error: any) {
@@ -208,14 +191,16 @@ export default function AdminAgentsPage() {
     );
   }
 
-  const statusColor= (isActive: boolean) => {
-    return isActive ? "bg-green-500" : "bg-red-500";
+  const statusColor = (isActive: boolean) => {
+    return isActive
+      ? "bg-green-500 dark:text-white"
+      : "bg-red-500 dark:text-white";
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex gap-6 flex-col md:flex-row items-center justify-between">
+        <div className="flex flex-col items-center md:items-start gap-2">
           <h1 className="text-3xl font-bold">Delivery Agents</h1>
           <p className="text-muted-foreground">
             Manage delivery agents and track their performance
@@ -228,8 +213,8 @@ export default function AdminAgentsPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+        <Card className="py-3 gap-2">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Agents</CardTitle>
             <UserCheck className="h-4 w-4 text-muted-foreground" />
@@ -239,7 +224,7 @@ export default function AdminAgentsPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="py-3 gap-2">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active</CardTitle>
             <UserCheck className="h-4 w-4 text-green-600" />
@@ -251,7 +236,7 @@ export default function AdminAgentsPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="py-3 gap-2">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Inactive</CardTitle>
             <UserCheck className="h-4 w-4 text-red-600" />
@@ -263,7 +248,7 @@ export default function AdminAgentsPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="py-3 gap-2">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Total Deliveries
@@ -417,7 +402,6 @@ export default function AdminAgentsPage() {
         open={performanceOpen}
         onOpenChange={setPerformanceOpen}
         agent={selectedAgent}
-        parcels={agentParcels}
       />
 
       <EditAgentDialog

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -170,6 +171,58 @@ export default function AdminDashboard() {
 
   // Chart data is computed from API and stored in state (statusData, dailyBookingsData)
 
+  const metricCards = [
+    {
+      id: "totalParcels",
+      title: "Total Parcels",
+      value: stats.totalParcels,
+      icon: Package,
+      subtitle: "+12% from last month",
+    },
+    {
+      id: "dailyBookings",
+      title: "Daily Bookings",
+      value: stats.dailyBookings,
+      icon: TrendingUp,
+      subtitle: "+8 from yesterday",
+    },
+    {
+      id: "totalCustomers",
+      title: "Total Customers",
+      value: stats.totalCustomers,
+      icon: Users,
+      subtitle: "+23 this month",
+    },
+    {
+      id: "codAmount",
+      title: "COD Amount",
+      value: `৳${stats.codAmount.toLocaleString()}`,
+      icon: DollarSign,
+      subtitle: "Pending collection",
+    },
+    {
+      id: "deliveredToday",
+      title: "Delivered Today",
+      value: stats.deliveredToday,
+      icon: CheckCircle,
+      iconClass: "text-green-500",
+    },
+    {
+      id: "failedDeliveries",
+      title: "Failed Deliveries",
+      value: stats.failedDeliveries,
+      icon: XCircle,
+      iconClass: "text-red-500",
+    },
+    {
+      id: "pendingParcels",
+      title: "Pending Parcels",
+      value: stats.pendingParcels,
+      icon: Clock,
+      iconClass: "text-yellow-500",
+    },
+  ];
+
   return (
     <div className="space-y-6">
       {loading ? (
@@ -185,104 +238,32 @@ export default function AdminDashboard() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Total Parcels
-                </CardTitle>
-                <Package className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.totalParcels}</div>
-                <p className="text-xs text-muted-foreground">
-                  +12% from last month
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Daily Bookings
-                </CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.dailyBookings}</div>
-                <p className="text-xs text-muted-foreground">
-                  +8 from yesterday
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Total Customers
-                </CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.totalCustomers}</div>
-                <p className="text-xs text-muted-foreground">+23 this month</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  COD Amount
-                </CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  ৳{stats.codAmount.toLocaleString()}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Pending collection
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Delivered Today
-                </CardTitle>
-                <CheckCircle className="h-4 w-4 text-green-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.deliveredToday}</div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Failed Deliveries
-                </CardTitle>
-                <XCircle className="h-4 w-4 text-red-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {stats.failedDeliveries}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Pending Parcels
-                </CardTitle>
-                <Clock className="h-4 w-4 text-yellow-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.pendingParcels}</div>
-              </CardContent>
-            </Card>
+          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {metricCards.map((card) => {
+              const Icon = card.icon as any;
+              return (
+                <Card className="py-3 gap-2" key={card.id}>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      {card.title}
+                    </CardTitle>
+                    <Icon
+                      className={`h-4 w-4 ${
+                        card.iconClass ?? "text-muted-foreground"
+                      }`}
+                    />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{card.value}</div>
+                    {card.subtitle && (
+                      <p className="text-xs text-muted-foreground">
+                        {card.subtitle}
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

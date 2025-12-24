@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,14 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { parcelApi } from "@/lib/api/parcels";
 import { Parcel } from "@/lib/store/slices/parcelSlice";
-import {
-  MapPin,
-  Package,
-  Clock,
-  CheckCircle,
-  XCircle,
-  Search,
-} from "lucide-react";
+import { CheckCircle, Search } from "lucide-react";
 import { format } from "date-fns";
 import toast from "react-hot-toast";
 import { QRCodeCanvas } from "qrcode.react";
@@ -28,59 +22,46 @@ function TrackingContent() {
   const [parcel, setParcel] = useState<Parcel | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const handleTrack = useCallback(
+    async (id?: string) => {
+      const trackId = id || trackingNumber;
+      if (!trackId) {
+        toast.error("Please enter a tracking number");
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const data = await parcelApi.trackParcel(trackId);
+        setParcel(data);
+      } catch (error: any) {
+        toast.error(error.response?.data?.message || "Parcel not found");
+        setParcel(null);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [trackingNumber]
+  );
   useEffect(() => {
     const id = searchParams.get("id");
     if (id) {
       handleTrack(id);
     }
-  }, [searchParams]);
-
-  const handleTrack = async (id?: string) => {
-    const trackId = id || trackingNumber;
-    if (!trackId) {
-      toast.error("Please enter a tracking number");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const data = await parcelApi.trackParcel(trackId);
-      setParcel(data);
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Parcel not found");
-      setParcel(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "delivered":
-        return <CheckCircle className="h-5 w-5 text-green-500" />;
-      case "failed":
-        return <XCircle className="h-5 w-5 text-red-500" />;
-      case "in_transit":
-        return <MapPin className="h-5 w-5 text-blue-500" />;
-      case "picked_up":
-        return <Package className="h-5 w-5 text-yellow-500" />;
-      default:
-        return <Clock className="h-5 w-5 text-gray-500" />;
-    }
-  };
+  }, [searchParams, handleTrack]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "delivered":
-        return "bg-green-500";
+        return "bg-green-500 text-white";
       case "failed":
-        return "bg-red-500";
+        return "bg-red-500 text-white";
       case "in_transit":
-        return "bg-blue-500";
+        return "bg-blue-500 text-white";
       case "picked_up":
-        return "bg-yellow-500";
+        return "bg-yellow-500 text-white";
       default:
-        return "bg-gray-500";
+        return "bg-gray-500 text-white";
     }
   };
 
@@ -120,7 +101,10 @@ function TrackingContent() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle>Parcel Status</CardTitle>
-                  <Badge variant="secondary" className={`capitalize ${getStatusColor(parcel.status)}`}>
+                  <Badge
+                    variant="secondary"
+                    className={`capitalize ${getStatusColor(parcel.status)}`}
+                  >
                     {parcel.status.replace("_", " ")}
                   </Badge>
                 </div>
