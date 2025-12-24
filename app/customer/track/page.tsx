@@ -13,6 +13,7 @@ import { CheckCircle, Search } from "lucide-react";
 import { format } from "date-fns";
 import toast from "react-hot-toast";
 import { QRCodeCanvas } from "qrcode.react";
+import ParcelTrackingMap from "@/components/maps/ParcelTrackingMap";
 
 function TrackingContent() {
   const searchParams = useSearchParams();
@@ -126,12 +127,32 @@ function TrackingContent() {
                         Pickup Address
                       </p>
                       <p className="text-sm">{parcel.pickupAddress}</p>
+                      {(parcel as any).pickupMapLink && (
+                        <a
+                          href={(parcel as any).pickupMapLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-blue-600 hover:underline mt-1 inline-block"
+                        >
+                          📍 View on Google Maps
+                        </a>
+                      )}
                     </div>
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">
                         Delivery Address
                       </p>
                       <p className="text-sm">{parcel.recipientAddress}</p>
+                      {(parcel as any).recipientMapLink && (
+                        <a
+                          href={(parcel as any).recipientMapLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-blue-600 hover:underline mt-1 inline-block"
+                        >
+                          📍 View on Google Maps
+                        </a>
+                      )}
                     </div>
                   </div>
 
@@ -237,17 +258,18 @@ function TrackingContent() {
           {parcel.currentLocation && (
             <Card>
               <CardHeader>
-                <CardTitle>Live Location</CardTitle>
+                <CardTitle>Live Location Tracking</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center">
-                  <p className="text-muted-foreground">
-                    Map integration would display here
-                    <br />
-                    Lat: {parcel.currentLocation.coordinates[1]}, Lng:{" "}
-                    {parcel.currentLocation.coordinates[0]}
-                  </p>
-                </div>
+                <ParcelTrackingMap
+                  pickupLat={23.8103}
+                  pickupLng={90.4125}
+                  deliveryLat={parcel.currentLocation.coordinates[1]}
+                  deliveryLng={parcel.currentLocation.coordinates[0]}
+                  currentLat={parcel.currentLocation.coordinates[1]}
+                  currentLng={parcel.currentLocation.coordinates[0]}
+                  trackingNumber={parcel.trackingNumber}
+                />
               </CardContent>
             </Card>
           )}

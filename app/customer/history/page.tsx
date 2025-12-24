@@ -112,7 +112,9 @@ export default function BookingHistoryPage() {
                     <TableHead>Tracking Number</TableHead>
                     <TableHead>Recipient</TableHead>
                     <TableHead>Phone</TableHead>
-                    <TableHead>Delivery Address</TableHead>
+                    <TableHead>Delivery Address</TableHead>{" "}
+                    <TableHead>Map Links</TableHead>{" "}
+                    <TableHead>Map Links</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Weight</TableHead>
                     <TableHead>Cost</TableHead>
@@ -130,6 +132,36 @@ export default function BookingHistoryPage() {
                       <TableCell>{parcel.recipientPhone}</TableCell>
                       <TableCell className="max-w-50 truncate">
                         {parcel.recipientAddress}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-1">
+                          {(parcel as any).pickupMapLink && (
+                            <a
+                              href={(parcel as any).pickupMapLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-blue-600 hover:underline"
+                            >
+                              📍 Pickup
+                            </a>
+                          )}
+                          {(parcel as any).recipientMapLink && (
+                            <a
+                              href={(parcel as any).recipientMapLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-blue-600 hover:underline"
+                            >
+                              📍 Delivery
+                            </a>
+                          )}
+                          {!(parcel as any).pickupMapLink &&
+                            !(parcel as any).recipientMapLink && (
+                              <span className="text-xs text-muted-foreground">
+                                N/A
+                              </span>
+                            )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Badge className={getStatusColor(parcel.status)}>

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState, useEffect } from "react";
@@ -28,9 +29,11 @@ const parcelSchema = z.object({
   pickupAddress: z
     .string()
     .min(10, "Pickup address must be at least 10 characters"),
+  pickupMapLink: z.string().url("Invalid URL").optional().or(z.literal("")),
   recipientAddress: z
     .string()
     .min(10, "Delivery address must be at least 10 characters"),
+  recipientMapLink: z.string().url("Invalid URL").optional().or(z.literal("")),
   recipientName: z
     .string()
     .min(2, "Recipient name must be at least 2 characters"),
@@ -122,6 +125,23 @@ export default function BookParcelPage() {
                   </p>
                 )}
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="pickupMapLink">Pickup Google Maps Link</Label>
+                <Input
+                  id="pickupMapLink"
+                  type="url"
+                  placeholder="https://maps.app.goo.gl/..."
+                  {...register("pickupMapLink")}
+                />
+                {errors.pickupMapLink && (
+                  <p className="text-sm text-red-500">
+                    {errors.pickupMapLink.message}
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Share location from Google Maps app or paste link
+                </p>
+              </div>
             </div>
 
             <div className="space-y-4">
@@ -168,6 +188,25 @@ export default function BookParcelPage() {
                     {errors.recipientAddress.message}
                   </p>
                 )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="recipientMapLink">
+                  Delivery Google Maps Link
+                </Label>
+                <Input
+                  id="recipientMapLink"
+                  type="url"
+                  placeholder="https://maps.app.goo.gl/..."
+                  {...register("recipientMapLink")}
+                />
+                {errors.recipientMapLink && (
+                  <p className="text-sm text-red-500">
+                    {errors.recipientMapLink.message}
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Share location from Google Maps app or paste link
+                </p>
               </div>
             </div>
 
@@ -238,7 +277,11 @@ export default function BookParcelPage() {
             </div>
 
             <div className="flex gap-4">
-              <Button type="submit" className="flex-1 cursor-pointer" disabled={loading}>
+              <Button
+                type="submit"
+                className="flex-1 cursor-pointer"
+                disabled={loading}
+              >
                 {loading ? "Booking..." : "Book Parcel"}
               </Button>
               <Button

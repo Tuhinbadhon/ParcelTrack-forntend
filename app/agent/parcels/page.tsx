@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
@@ -10,7 +11,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -101,22 +101,20 @@ function ParcelsContent() {
     setUpdateDialogOpen(true);
   };
 
-  const getStatusBadge = (status: string) => {
-    const variants: Record<string, "default" | "secondary" | "destructive"> = {
-      pending: "secondary",
-      picked_up: "default",
-      in_transit: "default",
-      delivered: "default",
-      failed: "destructive",
-    };
-
-    return (
-      <Badge variant={variants[status] || "default"} className="capitalize">
-        {status.replace("_", " ")}
-      </Badge>
-    );
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "delivered":
+        return "bg-green-500 text-white";
+      case "failed":
+        return "bg-red-500 text-white";
+      case "in_transit":
+        return "bg-blue-500 text-white";
+      case "picked_up":
+        return "bg-yellow-500 text-white";
+      default:
+        return "bg-gray-500 text-white";
+    }
   };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-100">
@@ -136,9 +134,6 @@ function ParcelsContent() {
 
       <div className="grid gap-4 md:grid-cols-2">
         {parcels.map((parcel) => {
-          const senderName =
-            typeof parcel.sender === "object" ? parcel.sender.name : "N/A";
-
           return (
             <Card
               key={parcel._id}
@@ -149,18 +144,54 @@ function ParcelsContent() {
                   <CardTitle className="text-lg">
                     {parcel.trackingNumber}
                   </CardTitle>
-                  {getStatusBadge(parcel.status)}
+                  <Badge
+                    className={`capitalize text-white ${getStatusColor(
+                      parcel.status
+                    )}`}
+                  >
+                    {parcel.status}
+                  </Badge>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <div className="flex items-start gap-2">
-                    <MapPin className="h-4 w-4 mt-1 text-muted-foreground" />
-                    <div>
+                    <MapPin className="h-4 w-4 mt-1 text-green-600" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">Pickup Address</p>
+                      <p className="text-sm text-muted-foreground">
+                        {parcel.pickupAddress}
+                      </p>
+                      {(parcel as any).pickupMapLink && (
+                        <a
+                          href={(parcel as any).pickupMapLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-blue-600 hover:underline mt-1 inline-block"
+                        >
+                          📍 Open in Google Maps
+                        </a>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2">
+                    <MapPin className="h-4 w-4 mt-1 text-red-600" />
+                    <div className="flex-1">
                       <p className="text-sm font-medium">Delivery Address</p>
                       <p className="text-sm text-muted-foreground">
                         {parcel.recipientAddress}
                       </p>
+                      {(parcel as any).recipientMapLink && (
+                        <a
+                          href={(parcel as any).recipientMapLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-blue-600 hover:underline mt-1 inline-block"
+                        >
+                          📍 Open in Google Maps
+                        </a>
+                      )}
                     </div>
                   </div>
 
@@ -218,9 +249,22 @@ function ParcelsContent() {
                   >
                     Update Status
                   </Button>
-                  <Button variant="outline">
-                    <MapPin className="h-4 w-4" />
-                  </Button>
+                  {((parcel as any).recipientMapLink ||
+                    (parcel as any).pickupMapLink) && (
+                    <Button
+                      variant="outline"
+                      className="cursor-pointer"
+                      onClick={() => {
+                        const link =
+                          (parcel as any).recipientMapLink ||
+                          (parcel as any).pickupMapLink;
+                        window.open(link, "_blank");
+                      }}
+                      title="Open in Google Maps"
+                    >
+                      <MapPin className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -245,13 +289,35 @@ function ParcelsContent() {
           {selectedParcel && (
             <div className="space-y-6">
               <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <div>
+                <div className="flex-1">
                   <p className="font-semibold">
                     {selectedParcel.trackingNumber}
                   </p>
                   <p className="text-sm text-muted-foreground">
                     {selectedParcel.recipientAddress}
                   </p>
+                  <div className="flex gap-4 mt-2">
+                    {(selectedParcel as any).pickupMapLink && (
+                      <a
+                        href={(selectedParcel as any).pickupMapLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-blue-600 hover:underline"
+                      >
+                        📍 Pickup Location
+                      </a>
+                    )}
+                    {(selectedParcel as any).recipientMapLink && (
+                      <a
+                        href={(selectedParcel as any).recipientMapLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-blue-600 hover:underline"
+                      >
+                        📍 Delivery Location
+                      </a>
+                    )}
+                  </div>
                 </div>
                 <QRCodeCanvas
                   value={selectedParcel.trackingNumber}
