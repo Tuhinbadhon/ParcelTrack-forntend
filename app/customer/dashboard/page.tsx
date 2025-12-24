@@ -22,6 +22,13 @@ export default function CustomerDashboard() {
 
   useEffect(() => {
     loadData();
+
+    // Set up auto-refresh for real-time updates
+    const interval = setInterval(() => {
+      loadData();
+    }, 15000); // Refresh every 15 seconds
+
+    return () => clearInterval(interval);
   }, []);
 
   const loadData = async () => {

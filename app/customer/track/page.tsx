@@ -51,6 +51,17 @@ function TrackingContent() {
     }
   }, [searchParams, handleTrack]);
 
+  // Auto-refresh tracking data every 10 seconds
+  useEffect(() => {
+    if (parcel) {
+      const interval = setInterval(() => {
+        handleTrack(parcel.trackingNumber);
+      }, 10000);
+
+      return () => clearInterval(interval);
+    }
+  }, [parcel, handleTrack]);
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "delivered":

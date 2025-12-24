@@ -2,17 +2,9 @@
 
 import { useAppSelector, useAppDispatch } from "@/lib/store/hooks";
 import { logout } from "@/lib/store/slices/authSlice";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import {
-  Package,
-  Bell,
-  User,
-  LogOut,
-  Menu,
-  Settings,
-  LayoutDashboard,
-} from "lucide-react";
+import { Package, User, LogOut, Menu, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -22,9 +14,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ThemeToggle } from "./ThemeToggle";
+import NotificationBell from "./NotificationBell";
+import { Badge } from "../ui/badge";
 
 interface NavbarProps {
   onMenuClick?: () => void;
@@ -33,9 +26,7 @@ interface NavbarProps {
 export function Navbar({ onMenuClick }: NavbarProps) {
   const dispatch = useAppDispatch();
   const router = useRouter();
-  const pathname = usePathname();
   const { user } = useAppSelector((state) => state.auth);
-  const { unreadCount } = useAppSelector((state) => state.notification);
 
   const handleLogout = () => {
     dispatch(logout());
@@ -90,22 +81,7 @@ export function Navbar({ onMenuClick }: NavbarProps) {
 
           {user && (
             <>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="relative"
-                onClick={() => router.push(`/${user.role}/notifications`)}
-              >
-                <Bell className="h-5 w-5" />
-                {unreadCount > 0 && (
-                  <Badge
-                    variant="destructive"
-                    className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
-                  >
-                    {unreadCount}
-                  </Badge>
-                )}
-              </Button>
+              <NotificationBell />
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

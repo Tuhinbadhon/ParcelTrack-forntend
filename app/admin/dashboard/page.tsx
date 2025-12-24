@@ -15,7 +15,6 @@ import {
 import { Bar, Doughnut } from "react-chartjs-2";
 import { parcelApi } from "@/lib/api/parcels";
 import { userApi } from "@/lib/api/users";
-import FleetTrackingMap from "@/components/maps/FleetTrackingMap";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -75,6 +74,13 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     loadDashboardData();
+
+    // Set up polling for real-time updates
+    const interval = setInterval(() => {
+      loadDashboardData();
+    }, 30000); // Refresh every 30 seconds
+
+    return () => clearInterval(interval);
   }, []);
 
   const loadDashboardData = async () => {
@@ -294,51 +300,6 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
           </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Fleet Tracking</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <FleetTrackingMap
-                agents={[
-                  {
-                    id: "1",
-                    name: "Agent 1",
-                    lat: 23.8103,
-                    lng: 90.4125,
-                    assignedParcels: 5,
-                    status: "active",
-                  },
-                  {
-                    id: "2",
-                    name: "Agent 2",
-                    lat: 23.7805,
-                    lng: 90.4252,
-                    assignedParcels: 3,
-                    status: "active",
-                  },
-                ]}
-                parcels={[
-                  {
-                    id: "1",
-                    trackingNumber: "TRK001",
-                    lat: 23.8203,
-                    lng: 90.4225,
-                    status: "in_transit",
-                    agentName: "Agent 1",
-                  },
-                  {
-                    id: "2",
-                    trackingNumber: "TRK002",
-                    lat: 23.7905,
-                    lng: 90.4152,
-                    status: "pending",
-                  },
-                ]}
-              />
-            </CardContent>
-          </Card>
         </>
       )}
     </div>

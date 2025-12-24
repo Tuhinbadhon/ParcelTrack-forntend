@@ -59,6 +59,55 @@ export function useSocket() {
         }
       );
 
+      // Listen for new bookings (for admin)
+      socketService.on("parcel:new-booking", (data: { parcel: Parcel }) => {
+        if (user.role === "admin") {
+          dispatch(
+            addNotification({
+              message: `New parcel booking: ${data.parcel.trackingNumber}`,
+              type: "info",
+            })
+          );
+        }
+      });
+
+      // Listen for email/SMS notifications sent
+      socketService.on(
+        "notification:sent",
+        (data: { type: string; recipient: string; message: string }) => {
+          console.log(`${data.type} notification sent to ${data.recipient}`);
+        }
+      );
+
+      // Listen for critical updates (for admin)
+      socketService.on(
+        "parcel:failed",
+        (data: { parcel: Parcel; reason?: string }) => {
+          if (user.role === "admin") {
+            dispatch(
+              addNotification({
+                message: `Parcel ${data.parcel.trackingNumber} delivery failed${
+                  data.reason ? `: ${data.reason}` : ""
+                }`,
+                type: "error",
+              })
+            );
+          }
+        }
+      );
+
+      // Listen for agent updates
+      socketService.on(
+        "agent:online-status",
+        (data: { agentId: string; isOnline: boolean }) => {
+          if (user.role === "admin") {
+            console.log(
+              `Agent ${data.agentId} is ${data.isOnline ? "online" : "offline"}`
+            );
+          }
+        }
+      );
+
       return () => {
         socketService.disconnect();
       };
