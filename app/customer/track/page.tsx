@@ -167,7 +167,7 @@ function TrackingContent() {
                     </div>
                   </div>
 
-                  <div className="grid gap-4 md:grid-cols-3">
+                  <div className="grid gap-4 md:grid-cols-4">
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">
                         Recipient Name
@@ -191,6 +191,18 @@ function TrackingContent() {
                         Cost
                       </p>
                       <p className="text-sm">৳{parcel.cost.toFixed(2)}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Payment Method
+                      </p>
+                      <p className="text-sm">
+                        {parcel.paymentType === "cod"
+                          ? "Cash on Delivery"
+                          : parcel.paymentType === "prepaid"
+                          ? "Prepaid"
+                          : "N/A"}
+                      </p>
                     </div>
                   </div>
                 </div>

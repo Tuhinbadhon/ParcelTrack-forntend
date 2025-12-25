@@ -113,11 +113,11 @@ export default function BookingHistoryPage() {
                     <TableHead>Recipient</TableHead>
                     <TableHead>Phone</TableHead>
                     <TableHead>Delivery Address</TableHead>{" "}
-                    <TableHead>Map Links</TableHead>{" "}
                     <TableHead>Map Links</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Weight</TableHead>
                     <TableHead>Cost</TableHead>
+                    <TableHead>Payment</TableHead>
                     <TableHead>Date</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -170,6 +170,9 @@ export default function BookingHistoryPage() {
                       </TableCell>
                       <TableCell>{parcel.weight} kg</TableCell>
                       <TableCell>৳{parcel.cost.toFixed(2)}</TableCell>
+                      <TableCell>
+                        {parcel.paymentType === "cod" ? "COD" : "Prepaid"}
+                      </TableCell>
                       <TableCell>
                         {format(new Date(parcel.createdAt), "PP")}
                       </TableCell>

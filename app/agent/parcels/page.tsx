@@ -238,6 +238,19 @@ function ParcelsContent() {
                   </div>
                 </div>
 
+                <div className="flex items-center gap-2">
+                  <div>
+                    <p className="text-sm font-medium">Payment Method</p>
+                    <p className="text-sm text-muted-foreground">
+                      {parcel.paymentType === "cod"
+                        ? "Cash on Delivery"
+                        : parcel.paymentType === "prepaid"
+                        ? "Prepaid"
+                        : "N/A"}
+                    </p>
+                  </div>
+                </div>
+
                 <div className="flex gap-2">
                   <Button
                     className="flex-1"

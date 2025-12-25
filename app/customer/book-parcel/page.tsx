@@ -43,6 +43,7 @@ const parcelSchema = z.object({
   weight: z.number().min(0.1, "Weight must be greater than 0"),
   description: z.string().optional(),
   cost: z.number().min(1, "Cost must be greater than 0"),
+  paymentType: z.enum(["cod", "prepaid"]),
 });
 
 type ParcelFormData = z.infer<typeof parcelSchema>;
@@ -59,6 +60,7 @@ export default function BookParcelPage() {
     formState: { errors },
   } = useForm<ParcelFormData>({
     resolver: zodResolver(parcelSchema),
+    defaultValues: { paymentType: "prepaid", cost: 0 },
   });
 
   const formData = watch();
@@ -258,6 +260,36 @@ export default function BookParcelPage() {
                   rows={2}
                 />
               </div>
+
+              <div className="space-y-4">
+                <h3 className="font-semibold">Payment</h3>
+                <div className="flex items-center gap-6">
+                  <label className="inline-flex items-center gap-2">
+                    <input
+                      type="radio"
+                      value="prepaid"
+                      {...register("paymentType")}
+                      defaultChecked
+                      className="form-radio"
+                    />
+                    <span>Prepaid</span>
+                  </label>
+                  <label className="inline-flex items-center gap-2">
+                    <input
+                      type="radio"
+                      value="cod"
+                      {...register("paymentType")}
+                      className="form-radio"
+                    />
+                    <span>Cash on Delivery (COD)</span>
+                  </label>
+                </div>
+                {errors.paymentType && (
+                  <p className="text-sm text-red-500">
+                    {errors.paymentType.message}
+                  </p>
+                )}
+              </div>
             </div>
 
             <div className="space-y-4">
@@ -272,6 +304,14 @@ export default function BookParcelPage() {
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Delivery Cost:</span>
                   <span className="font-medium">৳{formData.cost || "0"}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Payment Method:</span>
+                  <span className="font-medium">
+                    {formData.paymentType === "cod"
+                      ? "Cash on Delivery"
+                      : "Prepaid"}
+                  </span>
                 </div>
               </div>
             </div>

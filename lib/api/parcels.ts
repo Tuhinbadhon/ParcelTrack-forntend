@@ -9,6 +9,7 @@ export interface CreateParcelData {
   weight: number;
   description?: string;
   cost: number;
+  paymentType?: "cod" | "prepaid";
 }
 
 export interface UpdateParcelStatusData {

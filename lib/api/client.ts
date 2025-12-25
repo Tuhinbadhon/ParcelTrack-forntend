@@ -28,8 +28,6 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Don't auto-logout on 401 - let components handle it
-    // Only /auth/me endpoint in ProtectedRoute will trigger logout
     return Promise.reject(error);
   }
 );

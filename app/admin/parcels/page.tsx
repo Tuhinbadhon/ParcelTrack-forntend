@@ -153,6 +153,7 @@ export default function AdminParcelsPage() {
                   <TableHead>Agent</TableHead>
                   <TableHead>Address</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Payment</TableHead>
                   <TableHead>Cost</TableHead>
                   <TableHead>Weight</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -193,6 +194,17 @@ export default function AdminParcelsPage() {
                           )}`}
                         >
                           {parcel?.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            parcel.paymentType === "cod"
+                              ? "destructive"
+                              : "secondary"
+                          }
+                        >
+                          {parcel.paymentType === "cod" ? "COD" : "Prepaid"}
                         </Badge>
                       </TableCell>
                       <TableCell>৳{parcel.cost}</TableCell>

@@ -168,6 +168,9 @@ export default function CustomerDashboard() {
                       <p className="text-sm text-muted-foreground">
                         {parcel.recipientAddress}
                       </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Payment: {parcel.paymentType === "cod" ? "COD" : "Prepaid"}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
