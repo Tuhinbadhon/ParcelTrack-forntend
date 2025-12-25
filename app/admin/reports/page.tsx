@@ -25,7 +25,15 @@ import {
   Package,
   DollarSign,
 } from "lucide-react";
-import { format, subDays, startOfMonth, endOfMonth, subMonths } from "date-fns";
+import {
+  format,
+  subDays,
+  startOfMonth,
+  endOfMonth,
+  subMonths,
+  startOfDay,
+  endOfDay,
+} from "date-fns";
 import toast from "react-hot-toast";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -43,8 +51,59 @@ export default function AdminReportsPage() {
     pending: 0,
     failed: 0,
     revenue: 0,
-    cod: 0,
+    prepaidRevenue: 0,
+    codRevenue: 0,
   });
+  const [exportHistory, setExportHistory] = useState<
+    Array<{
+      id: string;
+      timestamp: Date;
+      type: string;
+      format: "PDF" | "CSV";
+      dateRange: string;
+      recordCount: number;
+    }>
+  >([]);
+
+  const metricCards = [
+    {
+      id: "total",
+      title: "Total Parcels",
+      value: stats.total,
+      icon: Package,
+      iconClass: "text-blue-600",
+      meta: "In selected period",
+    },
+    {
+      id: "delivered",
+      title: "Delivered",
+      value: stats.delivered,
+      icon: TrendingUp,
+      iconClass: "text-green-600",
+      meta:
+        stats.total > 0
+          ? `${((stats.delivered / stats.total) * 100).toFixed(
+              1
+            )}% success rate`
+          : "0% success rate",
+    },
+    {
+      id: "prepaid",
+      title: "Prepaid Revenue",
+      value: `${stats.prepaidRevenue} BDT`,
+      icon: DollarSign,
+      iconClass: "text-purple-600",
+      meta: "Online payments",
+    },
+    {
+      id: "cod",
+      title: "COD Revenue",
+      value: `${stats.codRevenue} BDT`,
+      icon: DollarSign,
+      iconClass: "text-orange-600",
+      meta: "Cash on delivery",
+    },
+  ];
 
   const getDateRangeFilter = useCallback(
     (range?: string) => {
@@ -52,40 +111,39 @@ export default function AdminReportsPage() {
       const dr = range ?? dateRange;
       switch (dr) {
         case "today":
-          return {
-            start: format(now, "yyyy-MM-dd"),
-            end: format(now, "yyyy-MM-dd"),
-          };
+          return { start: startOfDay(now), end: endOfDay(now) };
         case "last-7-days":
-          return {
-            start: format(subDays(now, 7), "yyyy-MM-dd"),
-            end: format(now, "yyyy-MM-dd"),
-          };
+          return { start: startOfDay(subDays(now, 7)), end: endOfDay(now) };
         case "last-30-days":
-          return {
-            start: format(subDays(now, 30), "yyyy-MM-dd"),
-            end: format(now, "yyyy-MM-dd"),
-          };
+          return { start: startOfDay(subDays(now, 30)), end: endOfDay(now) };
         case "this-month":
           return {
-            start: format(startOfMonth(now), "yyyy-MM-dd"),
-            end: format(endOfMonth(now), "yyyy-MM-dd"),
+            start: startOfDay(startOfMonth(now)),
+            end: endOfDay(endOfMonth(now)),
           };
-        case "last-month":
+        case "last-month": {
           const lastMonth = subMonths(now, 1);
           return {
-            start: format(startOfMonth(lastMonth), "yyyy-MM-dd"),
-            end: format(endOfMonth(lastMonth), "yyyy-MM-dd"),
+            start: startOfDay(startOfMonth(lastMonth)),
+            end: endOfDay(endOfMonth(lastMonth)),
           };
+        }
+        case "all-time":
+          return null;
         default:
-          return {
-            start: format(subDays(now, 30), "yyyy-MM-dd"),
-            end: format(now, "yyyy-MM-dd"),
-          };
+          return { start: startOfDay(subDays(now, 30)), end: endOfDay(now) };
       }
     },
     [dateRange]
   );
+
+  const formatDateRangeLabel = (range?: string) => {
+    const dr = range ?? dateRange;
+    if (dr === "all-time") return "All Time";
+    const filter = getDateRangeFilter(range);
+    if (!filter) return "All Time";
+    return `${format(filter.start, "PPP")} - ${format(filter.end, "PPP")}`;
+  };
 
   const fetchParcels = useCallback(
     async (overrideRange?: string) => {
@@ -93,12 +151,16 @@ export default function AdminReportsPage() {
         setLoading(true);
         const data = await parcelApi.getParcels();
 
-        // Filter by date range
+        // Filter by date range using Date comparison
         const dateFilter = getDateRangeFilter(overrideRange);
-        const filtered = data.filter((parcel) => {
-          const parcelDate = format(new Date(parcel.createdAt), "yyyy-MM-dd");
-          return parcelDate >= dateFilter.start && parcelDate <= dateFilter.end;
-        });
+        let filtered = data;
+        if (dateFilter) {
+          const { start, end } = dateFilter;
+          filtered = data.filter((parcel) => {
+            const parcelDate = new Date(parcel.createdAt);
+            return parcelDate >= start && parcelDate <= end;
+          });
+        }
 
         setParcels(filtered);
 
@@ -114,10 +176,15 @@ export default function AdminReportsPage() {
         ).length;
         const failed = filtered.filter((p) => p.status === "failed").length;
         const revenue = filtered
-          .filter((p) => p.paymentStatus === "paid")
+          .filter((p) =>  p.paymentStatus === "paid")
           .reduce((sum, p) => sum + p.cost, 0);
-        const cod = filtered
-          .filter((p) => p.paymentType === "cod" && p.status === "delivered")
+        const prepaidRevenue = filtered
+          .filter(
+            (p) => p.paymentType === "prepaid" && p.paymentStatus === "paid"
+          )
+          .reduce((sum, p) => sum + p.cost, 0);
+        const codRevenue = filtered
+          .filter((p) => p.paymentType === "cod" && p.paymentStatus === "paid")
           .reduce((sum, p) => sum + p.cost, 0);
 
         setStats({
@@ -126,10 +193,14 @@ export default function AdminReportsPage() {
           pending,
           failed,
           revenue,
-          cod,
+          prepaidRevenue,
+          codRevenue,
         });
+
+        return filtered;
       } catch {
         toast.error("Failed to fetch parcels");
+        return [];
       } finally {
         setLoading(false);
       }
@@ -140,34 +211,37 @@ export default function AdminReportsPage() {
     fetchParcels();
   }, [fetchParcels]);
 
-  const getFilteredParcels = () => {
+  const applyReportTypeFilter = (parcelsList: Parcel[]) => {
     switch (reportType) {
       case "all-parcels":
-        return parcels;
+        return parcelsList;
       case "delivered":
-        return parcels.filter((p) => p.status === "delivered");
+        return parcelsList.filter((p) => p.status === "delivered");
       case "pending":
-        return parcels.filter(
+        return parcelsList.filter(
           (p) =>
             p.status === "pending" ||
             p.status === "picked_up" ||
             p.status === "in_transit"
         );
       case "failed":
-        return parcels.filter((p) => p.status === "failed");
+        return parcelsList.filter((p) => p.status === "failed");
       case "cod":
-        return parcels.filter((p) => p.paymentType === "cod");
+        return parcelsList.filter((p) => p.paymentType === "cod");
       case "revenue":
-        return parcels.filter((p) => p.paymentStatus === "paid");
+        return parcelsList.filter((p) => p.paymentStatus === "paid");
       default:
-        return parcels;
+        return parcelsList;
     }
   };
 
-  const handleExportCSV = () => {
+  const getFilteredParcels = () => applyReportTypeFilter(parcels);
+
+  const handleExportCSV = async (overrideRange?: string) => {
     setLoading(true);
     try {
-      const filteredData = getFilteredParcels();
+      const fetchedParcels = await fetchParcels(overrideRange);
+      const filteredData = applyReportTypeFilter(fetchedParcels);
       const csvData = [
         [
           "Tracking Number",
@@ -196,11 +270,31 @@ export default function AdminReportsPage() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${reportType}-report-${format(
+
+      const label = formatDateRangeLabel(overrideRange).replace(
+        /[^a-z0-9]/gi,
+        "_"
+      );
+      a.download = `${reportType}-report-${label}-${format(
         new Date(),
         "yyyy-MM-dd"
       )}.csv`;
       a.click();
+
+      // Track export history
+      setExportHistory((prev) =>
+        [
+          {
+            id: Date.now().toString(),
+            timestamp: new Date(),
+            type: reportType.replace("-", " ").toUpperCase(),
+            format: "CSV" as const,
+            dateRange: formatDateRangeLabel(overrideRange),
+            recordCount: filteredData.length,
+          },
+          ...prev,
+        ].slice(0, 10)
+      ); // Keep last 10
 
       toast.success("CSV exported successfully");
     } catch {
@@ -210,10 +304,11 @@ export default function AdminReportsPage() {
     }
   };
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async (overrideRange?: string) => {
     setLoading(true);
     try {
-      const filteredData = getFilteredParcels();
+      const fetchedParcels = await fetchParcels(overrideRange);
+      const filteredData = applyReportTypeFilter(fetchedParcels);
       const doc = new jsPDF();
 
       // Header
@@ -225,7 +320,7 @@ export default function AdminReportsPage() {
         14,
         30
       );
-      doc.text(`Date Range: ${dateRange.replace("-", " ")}`, 14, 36);
+      doc.text(`Date Range: ${formatDateRangeLabel(overrideRange)}`, 14, 36);
       doc.text(`Generated on: ${format(new Date(), "PPP")}`, 14, 42);
 
       // Summary stats
@@ -236,12 +331,13 @@ export default function AdminReportsPage() {
       doc.text(`Delivered: ${stats.delivered}`, 14, 64);
       doc.text(`Pending: ${stats.pending}`, 14, 70);
       doc.text(`Failed: ${stats.failed}`, 14, 76);
-      doc.text(`Revenue: ${stats.revenue} BDT`, 14, 82);
-      doc.text(`COD Collections: ${stats.cod} BDT`, 14, 88);
+      doc.text(`Total Revenue: ${stats.revenue} BDT`, 14, 82);
+      doc.text(`Prepaid Revenue: ${stats.prepaidRevenue} BDT`, 14, 88);
+      doc.text(`COD Revenue: ${stats.codRevenue} BDT`, 14, 94);
 
       // Table
       autoTable(doc, {
-        startY: 95,
+        startY: 101,
         head: [
           [
             "Tracking",
@@ -255,7 +351,7 @@ export default function AdminReportsPage() {
         ],
         body: filteredData.map((parcel) => [
           parcel.trackingNumber,
-          typeof parcel.sender === "object" ? parcel.sender.name : "N/A",
+          typeof parcel.senderId === "object" ? parcel.senderId.name : "N/A",
           parcel.recipientName,
           parcel.status,
           `${parcel.cost} BDT`,
@@ -266,7 +362,32 @@ export default function AdminReportsPage() {
         headStyles: { fillColor: [59, 130, 246] },
       });
 
-      doc.save(`${reportType}-report-${format(new Date(), "yyyy-MM-dd")}.pdf`);
+      const filenameLabel = formatDateRangeLabel(overrideRange).replace(
+        /[^a-z0-9]/gi,
+        "_"
+      );
+      doc.save(
+        `${reportType}-report-${filenameLabel}-${format(
+          new Date(),
+          "yyyy-MM-dd"
+        )}.pdf`
+      );
+
+      // Track export history
+      setExportHistory((prev) =>
+        [
+          {
+            id: Date.now().toString(),
+            timestamp: new Date(),
+            type: reportType.replace("-", " ").toUpperCase(),
+            format: "PDF" as const,
+            dateRange: formatDateRangeLabel(overrideRange),
+            recordCount: filteredData.length,
+          },
+          ...prev,
+        ].slice(0, 10)
+      ); // Keep last 10
+
       toast.success("PDF exported successfully");
     } catch {
       toast.error("Failed to export PDF");
@@ -288,11 +409,13 @@ export default function AdminReportsPage() {
           : "this-month";
 
       setDateRange(newRange);
-      await fetchParcels(newRange);
-      handleExportPDF();
+      await handleExportPDF(newRange);
 
+      // Restore original range and refresh
       setDateRange(tempDateRange);
-    } catch {
+      await fetchParcels(tempDateRange);
+    } catch (err) {
+      console.error(err);
       toast.error("Failed to export report");
     } finally {
       setLoading(false);
@@ -309,63 +432,24 @@ export default function AdminReportsPage() {
       </div>
 
       {/* Stats Overview */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Package className="h-4 w-4 text-blue-600" />
-              Total Parcels
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.total}</div>
-            <p className="text-xs text-muted-foreground">In selected period</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-green-600" />
-              Delivered
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.delivered}</div>
-            <p className="text-xs text-muted-foreground">
-              {stats.total > 0
-                ? `${((stats.delivered / stats.total) * 100).toFixed(1)}%`
-                : "0%"}{" "}
-              success rate
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <DollarSign className="h-4 w-4 text-purple-600" />
-              Revenue
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.revenue} BDT</div>
-            <p className="text-xs text-muted-foreground">Total paid</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <DollarSign className="h-4 w-4 text-orange-600" />
-              COD Collections
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.cod} BDT</div>
-            <p className="text-xs text-muted-foreground">Cash on delivery</p>
-          </CardContent>
-        </Card>
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+        {metricCards.map((card) => {
+          const Icon = card.icon as any;
+          return (
+            <Card key={card.id} className="py-3 gap-2">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <Icon className={`h-4 w-4 ${card.iconClass}`} />
+                  {card.title}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className={`text-2xl font-bold`}>{card.value}</div>
+                <p className="text-xs text-muted-foreground">{card.meta}</p>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       <Card>
@@ -404,7 +488,7 @@ export default function AdminReportsPage() {
                   <SelectItem value="last-30-days">Last 30 Days</SelectItem>
                   <SelectItem value="this-month">This Month</SelectItem>
                   <SelectItem value="last-month">Last Month</SelectItem>
-                  <SelectItem value="custom">Custom Range</SelectItem>
+                  <SelectItem value="all-time">All Time</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -412,7 +496,7 @@ export default function AdminReportsPage() {
 
           <div className="flex gap-4">
             <Button
-              onClick={handleExportCSV}
+              onClick={() => handleExportCSV()}
               disabled={loading}
               className="flex-1"
             >
@@ -420,7 +504,7 @@ export default function AdminReportsPage() {
               Export as CSV
             </Button>
             <Button
-              onClick={handleExportPDF}
+              onClick={() => handleExportPDF()}
               disabled={loading}
               className="flex-1"
             >
@@ -501,7 +585,7 @@ export default function AdminReportsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Recent Exports</CardTitle>
+          <CardTitle>Export Preview</CardTitle>
           <CardDescription>
             {getFilteredParcels().length} parcels in current filter
           </CardDescription>
@@ -579,6 +663,46 @@ export default function AdminReportsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {exportHistory.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Export History</CardTitle>
+            <CardDescription>Recent export activities</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {exportHistory.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900"
+                >
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      {item.format === "PDF" ? (
+                        <FileText className="h-4 w-4 text-red-500" />
+                      ) : (
+                        <TableIcon className="h-4 w-4 text-green-500" />
+                      )}
+                      <p className="font-medium text-sm">
+                        {item.type} ({item.format})
+                      </p>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {item.dateRange} • {item.recordCount} records
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-muted-foreground">
+                      {format(item.timestamp, "PPp")}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

@@ -49,6 +49,8 @@ export default function AdminDashboard() {
     deliveredToday: 0,
     failedDeliveries: 0,
     pendingParcels: 0,
+    totalDeliveries: 0,
+    pendingParcelsToday: 0,
   });
   const [loading, setLoading] = useState(true);
   const [statusData, setStatusData] = useState({
@@ -93,7 +95,9 @@ export default function AdminDashboard() {
 
       const customers = users.filter((u) => u.role === "customer");
       const today = new Date().toDateString();
-
+      const totalDeliveries = parcels.filter(
+        (p) => p.status === "delivered"
+      ).length;
       const deliveredToday = parcels.filter(
         (p) =>
           p.status === "delivered" &&
@@ -104,7 +108,12 @@ export default function AdminDashboard() {
         (p) => p.status === "failed"
       ).length;
       const pendingParcels = parcels.filter(
-        (p) => p.status === "pending" || p.status === "picked_up"
+        (p) => p.status !== "delivered" && p.status !== "failed"
+      ).length;
+      const pendingParcelsToday = parcels.filter(
+        (p) =>
+          (p.status === "pending" || p.status === "picked_up") &&
+          new Date(p.createdAt).toDateString() === today
       ).length;
 
       setStats({
@@ -114,11 +123,18 @@ export default function AdminDashboard() {
           (p) => new Date(p.createdAt).toDateString() === today
         ).length,
         codAmount: parcels
-          .filter((p) => p.status !== "delivered")
+          .filter(
+            (p) =>
+              p.status !== "delivered" &&
+              p.paymentType === "cod" &&
+              p.status !== "failed"
+          )
           .reduce((sum, p) => sum + p.cost, 0),
         deliveredToday,
         failedDeliveries,
         pendingParcels,
+        totalDeliveries,
+        pendingParcelsToday,
       });
 
       // Compute chart data
@@ -184,22 +200,42 @@ export default function AdminDashboard() {
       title: "Total Parcels",
       value: stats.totalParcels,
       icon: Package,
-      subtitle: "+12% from last month",
+      subtitle: stats.dailyBookings
+        ? `${stats.dailyBookings} booked today`
+        : "No bookings today",
     },
     {
-      id: "dailyBookings",
-      title: "Daily Bookings",
-      value: stats.dailyBookings,
-      icon: TrendingUp,
-      subtitle: "+8 from yesterday",
+      id: "totalDeliveries",
+      title: "Total Delivered",
+      value: stats.totalDeliveries,
+      icon: CheckCircle,
+      iconClass: "text-green-500",
+      subtitle: stats.deliveredToday
+        ? `${stats.deliveredToday} delivered today`
+        : "No deliveries today",
     },
     {
-      id: "totalCustomers",
-      title: "Total Customers",
-      value: stats.totalCustomers,
-      icon: Users,
-      subtitle: "+23 this month",
+      id: "pendingParcels",
+      title: "Total Pending Parcels",
+      value: stats.pendingParcels,
+      icon: Clock,
+      iconClass: "text-yellow-500",
+      subtitle: stats.pendingParcelsToday
+        ? `${stats.pendingParcelsToday} pending today`
+        : "No pending parcels",
     },
+    // {
+    //   id: "dailyBookings",
+    //   title: "Today Bookings",
+    //   value: stats.dailyBookings,
+    //   icon: TrendingUp,
+    // },
+    // {
+    //   id: "totalCustomers",
+    //   title: "Total Customers",
+    //   value: stats.totalCustomers,
+    //   icon: Users,
+    // },
     {
       id: "codAmount",
       title: "COD Amount",
@@ -207,26 +243,13 @@ export default function AdminDashboard() {
       icon: DollarSign,
       subtitle: "Pending collection",
     },
-    {
-      id: "deliveredToday",
-      title: "Delivered Today",
-      value: stats.deliveredToday,
-      icon: CheckCircle,
-      iconClass: "text-green-500",
-    },
+
     {
       id: "failedDeliveries",
       title: "Failed Deliveries",
       value: stats.failedDeliveries,
       icon: XCircle,
       iconClass: "text-red-500",
-    },
-    {
-      id: "pendingParcels",
-      title: "Pending Parcels",
-      value: stats.pendingParcels,
-      icon: Clock,
-      iconClass: "text-yellow-500",
     },
   ];
 

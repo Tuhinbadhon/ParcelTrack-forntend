@@ -16,6 +16,7 @@ import {
   Calendar,
   Package,
   TrendingUp,
+  XCircle,
 } from "lucide-react";
 import { userApi } from "@/lib/api/users";
 import { parcelApi } from "@/lib/api/parcels";
@@ -49,10 +50,13 @@ export interface Agent {
   createdAt: string;
   assignedParcels?: number;
   completedParcels?: number;
+  failedParcels?: number;
+
   performance?: {
     totalAssigned: number;
     totalCompleted: number;
     completionRate: number;
+    totalFailed: number;
   };
 }
 
@@ -66,6 +70,7 @@ export default function AdminAgentsPage() {
     active: 0,
     inactive: 0,
     totalDeliveries: 0,
+    totalFailed: 0,
   });
 
   // Dialog states
@@ -109,16 +114,20 @@ export default function AdminAgentsPage() {
 
       const mappedAgents: Agent[] = agentsData.map((agent: Partial<Agent>) => {
         const assigned = parcels.filter((p) => {
-          const agentId = typeof p.agent === "object" ? p.agent?._id : p.agent;
+          const agentId =
+            typeof p.agentId === "object" ? p.agentId?._id : p.agentId;
           return agentId === agent._id;
         }).length;
 
         const completed = parcels.filter((p) => {
-          const agentId = typeof p.agent === "object" ? p.agent?._id : p.agent;
-          return (
-            agentId === agent._id &&
-            (p.status === "delivered" || p.status === "failed")
-          );
+          const agentId =
+            typeof p.agentId === "object" ? p.agentId?._id : p.agentId;
+          return agentId === agent._id && p.status === "delivered";
+        }).length;
+        const failed = parcels.filter((p) => {
+          const agentId =
+            typeof p.agentId === "object" ? p.agentId?._id : p.agentId;
+          return agentId === agent._id && p.status === "failed";
         }).length;
 
         return {
@@ -126,6 +135,7 @@ export default function AdminAgentsPage() {
           isActive: agent.isActive ?? true,
           assignedParcels: assigned,
           completedParcels: completed,
+          failedParcels: failed,
         } as Agent;
       });
 
@@ -138,6 +148,10 @@ export default function AdminAgentsPage() {
         inactive: mappedAgents.filter((a) => !a.isActive).length,
         totalDeliveries: mappedAgents.reduce(
           (sum, a) => sum + (a.completedParcels || 0),
+          0
+        ),
+        totalFailed: mappedAgents.reduce(
+          (sum, a) => sum + (a.failedParcels || 0),
           0
         ),
       });
@@ -197,6 +211,49 @@ export default function AdminAgentsPage() {
       : "bg-red-500 dark:text-white";
   };
 
+  const statsCards = [
+    {
+      id: "total",
+      title: "Total Agents",
+      value: stats.total,
+      icon: UserCheck,
+      color: "text-muted-foreground",
+      valueColor: "",
+    },
+    {
+      id: "active",
+      title: "Active",
+      value: stats.active,
+      icon: UserCheck,
+      color: "text-green-600",
+      valueColor: "text-green-600",
+    },
+    {
+      id: "inactive",
+      title: "Inactive",
+      value: stats.inactive,
+      icon: UserCheck,
+      color: "text-red-600",
+      valueColor: "text-red-600",
+    },
+    {
+      id: "deliveries",
+      title: "Total Deliveries",
+      value: stats.totalDeliveries,
+      icon: TrendingUp,
+      color: "text-blue-600",
+      valueColor: "text-blue-600",
+    },
+    {
+      id: "failed",
+      title: "Total Failed",
+      value: stats.totalFailed,
+      icon: XCircle,
+      color: "text-red-600",
+      valueColor: "text-red-600",
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <div className="flex gap-6 flex-col md:flex-row items-center justify-between">
@@ -214,53 +271,24 @@ export default function AdminAgentsPage() {
 
       {/* Stats Cards */}
       <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
-        <Card className="py-3 gap-2">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Agents</CardTitle>
-            <UserCheck className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.total}</div>
-          </CardContent>
-        </Card>
-
-        <Card className="py-3 gap-2">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active</CardTitle>
-            <UserCheck className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {stats.active}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="py-3 gap-2">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Inactive</CardTitle>
-            <UserCheck className="h-4 w-4 text-red-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">
-              {stats.inactive}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="py-3 gap-2">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Deliveries
-            </CardTitle>
-            <TrendingUp className="h-4 w-4 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
-              {stats.totalDeliveries}
-            </div>
-          </CardContent>
-        </Card>
+        {statsCards.map((card) => {
+          const Icon = card.icon;
+          return (
+            <Card key={card.id} className="py-3 gap-2">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  {card.title}
+                </CardTitle>
+                <Icon className={`h-4 w-4 ${card.color}`} />
+              </CardHeader>
+              <CardContent>
+                <div className={`text-2xl font-bold ${card.valueColor}`}>
+                  {card.value}
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       {/* Search and Table */}
