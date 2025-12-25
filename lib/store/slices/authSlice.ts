@@ -50,11 +50,19 @@ const authSlice = createSlice({
         localStorage.removeItem("user");
       }
     },
+    clearAllState: (state) => {
+      // Complete state reset on logout
+      state.user = null;
+      state.token = null;
+      state.isAuthenticated = false;
+      state.isLoading = false;
+    },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.isLoading = action.payload;
     },
   },
 });
 
-export const { setCredentials, logout, setLoading } = authSlice.actions;
+export const { setCredentials, logout, setLoading, clearAllState } =
+  authSlice.actions;
 export default authSlice.reducer;

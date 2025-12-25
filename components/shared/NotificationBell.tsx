@@ -17,9 +17,11 @@ import {
 } from "@/lib/store/slices/notificationSlice";
 import { format } from "date-fns";
 import toast from "react-hot-toast";
+import Link from "next/link";
 
 export default function NotificationBell() {
   const dispatch = useAppDispatch();
+  const { user } = useAppSelector((state) => state.auth);
   const { notifications, unreadCount } = useAppSelector(
     (state) => state.notification
   );
@@ -150,16 +152,13 @@ export default function NotificationBell() {
         )}
 
         {notifications.length > 0 && (
-          <div className="p-2 border-t text-center">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full text-xs"
-              onClick={() => setOpen(false)}
-            >
-              View All Notifications
-            </Button>
-          </div>
+          <Link href={`/${user?.role}/notifications`}>
+            <div className="p-2 border-t text-center">
+              <Button variant="ghost" size="sm" className="w-full text-xs">
+                View All Notifications
+              </Button>
+            </div>
+          </Link>
         )}
       </DropdownMenuContent>
     </DropdownMenu>

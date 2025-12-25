@@ -53,9 +53,31 @@ export const notificationApi = {
     return response.data;
   },
 
-  // Get notification history
+  // Get notification history (admin only - all notifications)
   getHistory: async () => {
     const response = await apiClient.get("/notifications/history");
+    return response.data;
+  },
+
+  // Get my notifications (current user's notifications)
+  getMyNotifications: async (unreadOnly = false) => {
+    const response = await apiClient.get("/notifications", {
+      params: { unreadOnly },
+    });
+    return response.data;
+  },
+
+  // Mark notification as read
+  markAsRead: async (notificationId: string) => {
+    const response = await apiClient.patch(
+      `/notifications/${notificationId}/read`
+    );
+    return response.data;
+  },
+
+  // Mark all notifications as read
+  markAllAsRead: async () => {
+    const response = await apiClient.patch("/notifications/mark-all-read");
     return response.data;
   },
 

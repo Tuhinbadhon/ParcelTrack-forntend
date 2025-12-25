@@ -10,6 +10,7 @@ export interface CreateParcelData {
   description?: string;
   cost: number;
   paymentType?: "cod" | "prepaid";
+  senderName: string | null;
 }
 
 export interface UpdateParcelStatusData {

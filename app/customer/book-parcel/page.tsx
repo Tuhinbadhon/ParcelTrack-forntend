@@ -20,6 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { parcelApi } from "@/lib/api/parcels";
 import toast from "react-hot-toast";
 import { Package } from "lucide-react";
+import { useAppSelector } from "@/lib/store/hooks";
 
 // Pricing rules
 const RATE_PER_KG = 15; // BDT per kg
@@ -44,6 +45,7 @@ const parcelSchema = z.object({
   description: z.string().optional(),
   cost: z.number().min(1, "Cost must be greater than 0"),
   paymentType: z.enum(["cod", "prepaid"]),
+  senderName: z.string().optional(),
 });
 
 type ParcelFormData = z.infer<typeof parcelSchema>;
@@ -51,6 +53,7 @@ type ParcelFormData = z.infer<typeof parcelSchema>;
 export default function BookParcelPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const { user } = useAppSelector((state) => state.auth);
 
   const {
     register,
@@ -80,7 +83,10 @@ export default function BookParcelPage() {
     setLoading(true);
 
     try {
-      const parcel = await parcelApi.createParcel(data);
+      const parcel = await parcelApi.createParcel({
+        ...data,
+        senderName: user?.name || "",
+      });
       toast.success("Parcel booked successfully!");
       router.push(`/customer/track?id=${parcel.trackingNumber}`);
     } catch (error: any) {

@@ -2,6 +2,8 @@
 
 import { useAppSelector, useAppDispatch } from "@/lib/store/hooks";
 import { logout } from "@/lib/store/slices/authSlice";
+import { resetNotifications } from "@/lib/store/slices/notificationSlice";
+import { socketService } from "@/lib/socket/socket";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Package, User, LogOut, Menu, LayoutDashboard } from "lucide-react";
@@ -29,7 +31,20 @@ export function Navbar({ onMenuClick }: NavbarProps) {
   const { user } = useAppSelector((state) => state.auth);
 
   const handleLogout = () => {
+    console.log("🔐 Logging out user:", user?.name);
+
+    // 1. Disconnect socket FIRST to prevent receiving notifications
+    socketService.disconnect();
+
+    // 2. Clear all notifications from Redux store
+    dispatch(resetNotifications());
+
+    // 3. Clear auth state and localStorage
     dispatch(logout());
+
+    console.log("✅ Logout complete, redirecting to login...");
+
+    // 4. Redirect to login
     router.push("/login");
   };
 

@@ -2,6 +2,7 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 interface Notification {
   id: string;
+  _id?: string; // Backend ID for syncing
   message: string;
   type: "info" | "success" | "warning" | "error";
   timestamp: string;
@@ -24,11 +25,14 @@ const notificationSlice = createSlice({
   reducers: {
     addNotification: (
       state,
-      action: PayloadAction<Omit<Notification, "id" | "timestamp" | "read">>
+      action: PayloadAction<
+        Omit<Notification, "id" | "timestamp" | "read"> & { _id?: string }
+      >
     ) => {
       const notification: Notification = {
         ...action.payload,
-        id: Date.now().toString(),
+        id: action.payload._id || Date.now().toString(),
+        _id: action.payload._id,
         timestamp: new Date().toISOString(),
         read: false,
       };
@@ -52,6 +56,29 @@ const notificationSlice = createSlice({
       state.notifications = [];
       state.unreadCount = 0;
     },
+    resetNotifications: () => initialState,
+    setNotifications: (state, action: PayloadAction<any[]>) => {
+      // Replace all notifications with fetched ones from backend
+      state.notifications = action.payload.map((n) => ({
+        ...n,
+        id: n._id || n.id || Date.now().toString(),
+        _id: n._id,
+        timestamp: n.timestamp || n.createdAt || new Date().toISOString(),
+      }));
+      state.unreadCount = state.notifications.filter((n) => !n.read).length;
+    },
+    loadNotifications: (state, action: PayloadAction<Notification[]>) => {
+      // Merge fetched notifications with existing ones (avoid duplicates)
+      const existingIds = new Set(state.notifications.map((n) => n.id));
+      const newNotifications = action.payload.filter(
+        (n) => !existingIds.has(n.id)
+      );
+      state.notifications = [...state.notifications, ...newNotifications].sort(
+        (a, b) =>
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      );
+      state.unreadCount = state.notifications.filter((n) => !n.read).length;
+    },
   },
 });
 
@@ -60,5 +87,8 @@ export const {
   markAsRead,
   markAllAsRead,
   clearNotifications,
+  resetNotifications,
+  setNotifications,
+  loadNotifications,
 } = notificationSlice.actions;
 export default notificationSlice.reducer;
