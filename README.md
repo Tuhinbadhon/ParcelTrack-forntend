@@ -2,6 +2,13 @@
 
 A comprehensive courier tracking and parcel management system built with Next.js 16, TypeScript, Redux Toolkit, and Tailwind CSS.
 
+
+For development and testing purposes, use the following account:
+
+- **Email:** `admin@gmail.com`
+- **Password:** `123456`
+
+
 ## 🚀 Features
 
 ### Customer Features
